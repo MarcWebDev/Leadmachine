@@ -6,8 +6,15 @@ import sys
 import csv
 import json
 import re
+import platform
 import webbrowser
 from datetime import datetime
+
+_IS_MAC = platform.system() == "Darwin"
+_FONT_D = "SF Pro Display" if _IS_MAC else "Segoe UI"
+_FONT_T = "SF Pro Text"    if _IS_MAC else "Segoe UI"
+_MOD    = "Command"        if _IS_MAC else "Control"
+_UNDO_HINT = "⌘Z"         if _IS_MAC else "Strg+Z"
 
 import tkinter as tk
 from tkinter import ttk, filedialog, messagebox
@@ -15,8 +22,13 @@ import customtkinter as ctk
 
 # ── Datenpfad ────────────────────────────────────────────────────────────────
 if getattr(sys, "frozen", False):
-    _app_dir = os.path.dirname(os.path.dirname(os.path.dirname(
-        os.path.dirname(sys.executable))))
+    if _IS_MAC:
+        # macOS .app bundle: App.app/Contents/MacOS/executable → 4 levels up
+        _app_dir = os.path.dirname(os.path.dirname(os.path.dirname(
+            os.path.dirname(sys.executable))))
+    else:
+        # Windows PyInstaller --onedir: dist/Leadmachine/Leadmachine.exe
+        _app_dir = os.path.dirname(sys.executable)
     DATA_FILE = os.path.join(_app_dir, "leads.json")
 else:
     DATA_FILE = os.path.join(os.path.dirname(os.path.abspath(__file__)), "leads.json")
@@ -99,19 +111,19 @@ class LeadMachine:
         self.root.minsize(1180, 760)
         self.root.configure(fg_color=BG)
 
-        self.f_logo    = ctk.CTkFont("SF Pro Display", 17, "bold")
-        self.f_h1      = ctk.CTkFont("SF Pro Display", 23, "bold")
-        self.f_sub     = ctk.CTkFont("SF Pro Text", 13)
-        self.f_section = ctk.CTkFont("SF Pro Display", 15, "bold")
-        self.f_micro   = ctk.CTkFont("SF Pro Text", 11)
-        self.f_label   = ctk.CTkFont("SF Pro Text", 10, "bold")
-        self.f_kpi     = ctk.CTkFont("SF Pro Display", 25, "bold")
-        self.f_company = ctk.CTkFont("SF Pro Display", 25, "bold")
-        self.f_body    = ctk.CTkFont("SF Pro Text", 13)
-        self.f_bodyb   = ctk.CTkFont("SF Pro Text", 13, "bold")
-        self.f_nav     = ctk.CTkFont("SF Pro Text", 13)
-        self.f_btn     = ctk.CTkFont("SF Pro Display", 13, "bold")
-        self.f_small   = ctk.CTkFont("SF Pro Text", 12)
+        self.f_logo    = ctk.CTkFont(_FONT_D, 17, "bold")
+        self.f_h1      = ctk.CTkFont(_FONT_D, 23, "bold")
+        self.f_sub     = ctk.CTkFont(_FONT_T, 13)
+        self.f_section = ctk.CTkFont(_FONT_D, 15, "bold")
+        self.f_micro   = ctk.CTkFont(_FONT_T, 11)
+        self.f_label   = ctk.CTkFont(_FONT_T, 10, "bold")
+        self.f_kpi     = ctk.CTkFont(_FONT_D, 25, "bold")
+        self.f_company = ctk.CTkFont(_FONT_D, 25, "bold")
+        self.f_body    = ctk.CTkFont(_FONT_T, 13)
+        self.f_bodyb   = ctk.CTkFont(_FONT_T, 13, "bold")
+        self.f_nav     = ctk.CTkFont(_FONT_T, 13)
+        self.f_btn     = ctk.CTkFont(_FONT_D, 13, "bold")
+        self.f_small   = ctk.CTkFont(_FONT_T, 12)
 
         self.root.grid_columnconfigure(1, weight=1)
         self.root.grid_rowconfigure(0, weight=1)
@@ -363,7 +375,7 @@ class LeadMachine:
         actions = ctk.CTkFrame(body, fg_color="transparent")
         actions.pack(fill="x", pady=(14, 0))
         order = ["nicht_erreicht", "interessiert", "rueckruf", "nicht_interessiert", "kunde"]
-        f_action = ctk.CTkFont("SF Pro Display", 12, "bold")
+        f_action = ctk.CTkFont(_FONT_D, 12, "bold")
         for i, st in enumerate(order):
             actions.grid_columnconfigure(i, weight=1)
             cfg = STATUS[st]
@@ -377,9 +389,9 @@ class LeadMachine:
 
         # Tastaturkürzel-Hinweis
         ctk.CTkLabel(body,
-                     text="[1] Nicht err.  [2] Interessiert  [3] Rückruf  "
-                          "[4] Kein Interesse  [5] Kunde   "
-                          "Leertaste: Überspringen   Entf: Löschen   ⌘Z: Rückgängig",
+                     text=f"[1] Nicht err.  [2] Interessiert  [3] Rückruf  "
+                          f"[4] Kein Interesse  [5] Kunde   "
+                          f"Leertaste: Überspringen   Entf: Löschen   {_UNDO_HINT}: Rückgängig",
                      font=ctk.CTkFont(size=10), text_color=FAINT,
                      anchor="w", wraplength=700).pack(fill="x", pady=(6, 0))
 
@@ -483,9 +495,9 @@ class LeadMachine:
         style.theme_use("default")
         style.configure("LM.Treeview", background=CARD, foreground=SUBTLE,
                         fieldbackground=CARD, rowheight=34, borderwidth=0,
-                        font=("SF Pro Text", 12))
+                        font=(_FONT_T, 12))
         style.configure("LM.Treeview.Heading", background=BG, foreground=MUTED,
-                        font=("SF Pro Text", 10, "bold"), relief="flat",
+                        font=(_FONT_T, 10, "bold"), relief="flat",
                         borderwidth=0, padding=(8, 8))
         style.map("LM.Treeview", background=[("selected", "#1d2a44")],
                   foreground=[("selected", TEXT)])
@@ -631,7 +643,7 @@ class LeadMachine:
         self.current_idx = 0
         self._refresh()
         self.statusbar_var.set(
-            f"Status gesetzt: {STATUS[status]['label']}   ·   ⌘Z zum Rückgängigmachen")
+            f"Status gesetzt: {STATUS[status]['label']}   ·   {_UNDO_HINT} zum Rückgängigmachen")
 
     def _skip(self):
         q = self._callable()
@@ -890,8 +902,8 @@ class LeadMachine:
 
         self.root.bind("<Key>",       on_key)
         self.root.bind("<Delete>",    on_delete)
-        self.root.bind("<Command-z>", lambda e: self._undo())
-        self.root.bind("<Command-Z>", lambda e: self._undo())
+        self.root.bind(f"<{_MOD}-z>", lambda e: self._undo())
+        self.root.bind(f"<{_MOD}-Z>", lambda e: self._undo())
 
     # ── List-Refresh ─────────────────────────────────────────────────────────
 
